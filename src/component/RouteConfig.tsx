@@ -2,7 +2,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react'
 import { PokemonContext } from './PokemonContext'
 import Loading from '../image/cut-loop.webp'
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client'
 
@@ -28,15 +28,28 @@ function RouteConfig() {
     localStorage.setItem('pokemon', JSON.stringify(pokemonOwned))
   }, [pokemonOwned])
 
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <PokemonList />
+    },
+    {
+      path: "/pokemon/:id",
+      element: <PokemonDetail />
+    },
+    {
+      path: "/myPokemon",
+      element: <PokemonDeck />
+    },
+  ])
+
   return (
-    <Router>
-      <Switch>
-        <ApolloProvider client={client}>
-          <PokemonContext.Provider value={{ pokemonOwned, setPokemonOwned }}>
-            <Suspense
-              fallback={
-                <div
-                  css={css`
+    <ApolloProvider client={client}>
+      <PokemonContext.Provider value={{ pokemonOwned, setPokemonOwned }}>
+        <Suspense
+          fallback={
+            <div
+              css={css`
                     background-color: #f8f7fb;
                     width: 100vw;
                     height: 100vh;
@@ -44,35 +57,24 @@ function RouteConfig() {
                     flex-direction: column;
                     justify-content: center;
                   `}
-                >
-                  <img
-                    src={Loading}
-                    css={css`
+            >
+              <img
+                src={Loading}
+                css={css`
                       margin: auto;
                       width: 360px;
                       height: auto;
                     `}
-                    alt="loading"
-                  />
-                </div>
-              }
-            >
-              <Route exact path="/">
-                <PokemonList changeName={(pokemon) => setPokemon(pokemon)} />
-              </Route>
+                alt="loading"
+              />
+            </div>
+          }
+        >
+          <RouterProvider router={router} />
 
-              <Route exact path="/pokemon/:id">
-                <PokemonDetail name={pokemon} />
-              </Route>
-
-              <Route exact path="/myPokemon/">
-                <PokemonDeck />
-              </Route>
-            </Suspense>
-          </PokemonContext.Provider>
-        </ApolloProvider>
-      </Switch>
-    </Router>
+        </Suspense>
+      </PokemonContext.Provider>
+    </ApolloProvider>
   )
 }
 

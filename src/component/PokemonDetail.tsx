@@ -34,7 +34,7 @@ const PokemonDetail = (value) => {
     return localPokemon ? JSON.parse(localPokemon) : []
   })
 
-  const url = useParams()
+  const { id:name } = useParams()
 
   useEffect(() => {
     localStorage.setItem('pokemon', JSON.stringify(myPokemon))
@@ -62,30 +62,19 @@ const PokemonDetail = (value) => {
     }
   `
 
-  const pokemonName = { name: value.name }
-  const pokemonNamefromUrl = { name: url.id }
-
   const { loading, error, data } = useQuery(GET_POKEMON, {
-    variables: value.name !== null ? pokemonName : pokemonNamefromUrl,
+    variables: { name },
   })
 
   const { myPokemonNickname } = newPokemon
 
-  const handleOpenModal = async (e) => {
-    var min = 1
-    var max = 100
-    var c = false
-    var randomValue = Math.floor(Math.random(min, max) * 100)
+  const handleOpenModal =  () => {
+    var randomValue = Math.floor(Math.random() * 100)
 
     if (randomValue <= 50) {
-      c = true
+      setOpenModal(true)
     } else {
-      c = false
-    }
-    if (c) {
-      await setOpenModal(true)
-    } else {
-      await setFailCatch(true)
+      setFailCatch(true)
     }
   }
 
@@ -103,7 +92,7 @@ const PokemonDetail = (value) => {
     setNewPokemon({ ...newPokemon, [e.target.name]: e.target.value })
   }
 
-  const handleCatchPokemon = (event) => {
+  const handleCatchPokemon = () => {
     setHadSameNickname(false)
 
     let newPokemons = {
@@ -197,7 +186,7 @@ const PokemonDetail = (value) => {
         pauseOnHover={false}
       />
 
-      <AnimatePresence exitBeforeEnter>
+      <AnimatePresence>
         {failCatch && (
           <>
             <motion.div
@@ -265,7 +254,6 @@ const PokemonDetail = (value) => {
                   y: 100,
                   opacity: 0,
                 }}
-                transition={{ delay: 1.6 }}
                 css={css`
                   border-radius: 16px;
                   padding: 32px;
@@ -368,7 +356,6 @@ const PokemonDetail = (value) => {
                   y: 100,
                   opacity: 0,
                 }}
-                transition={{ delay: 1.6 }}
                 css={css`
                   border-radius: 16px;
                   padding: 32px;
@@ -557,9 +544,9 @@ const PokemonDetail = (value) => {
                   >
                     {pokemonData.types !== null
                       ? pokemonData.types.map((data, index) => (
-                          <p
-                            key={index}
-                            css={css`
+                        <p
+                          key={index}
+                          css={css`
                               margin: 0;
                               margin-right: 8px;
                               background-color: #f4f4f4;
@@ -568,16 +555,16 @@ const PokemonDetail = (value) => {
                               font-size: 12px;
                               font-family: Poppins;
                             `}
-                          >
-                            {data.type.name}
-                          </p>
-                        ))
+                        >
+                          {data.type.name}
+                        </p>
+                      ))
                       : null}
                   </div>
                 </div>
 
                 <button
-                  onClick={() => handleOpenModal(pokemonData)}
+                  onClick={handleOpenModal}
                   css={css`
                     background-color: #54a38f;
                     border: none;
@@ -648,26 +635,26 @@ const PokemonDetail = (value) => {
               <ul>
                 {pokemonData.moves !== null
                   ? slice(pokemonData.moves, 0, limitMoves).map(
-                      (data, index) => (
-                        <li
-                          css={css`
+                    (data, index) => (
+                      <li
+                        css={css`
                             list-style-image: url(https://cdn-icons-png.flaticon.com/16/188/188918.png);
                           `}
-                        >
-                          <p
-                            key={index}
-                            css={css`
+                      >
+                        <p
+                          key={index}
+                          css={css`
                               margin: 4px;
                               font-size: 16px;
                               font-weight: 400;
                               font-family: Poppins;
                             `}
-                          >
-                            {data.move.name}
-                          </p>
-                        </li>
-                      ),
-                    )
+                        >
+                          {data.move.name}
+                        </p>
+                      </li>
+                    ),
+                  )
                   : null}
               </ul>
               {limitMoves !== pokemonData.moves.length ? (

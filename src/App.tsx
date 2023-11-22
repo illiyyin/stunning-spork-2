@@ -1,11 +1,7 @@
 import RouteConfig from './component/RouteConfig'
 
 function App() {
-  return (
-    <>
-      <RouteConfig />
-    </>
-  )
+  return <RouteConfig />
 }
 
 export default App

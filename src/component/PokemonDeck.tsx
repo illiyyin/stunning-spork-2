@@ -77,7 +77,7 @@ const PokemonDeck = () => {
         pauseOnHover={false}
       />
 
-      <AnimatePresence exitBeforeEnter>
+      <AnimatePresence>
         {openModal && (
           <>
             <motion.div
