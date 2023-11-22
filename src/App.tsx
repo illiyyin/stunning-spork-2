@@ -1,13 +1,11 @@
-import RouteConfig from "./component/RouteConfig";
-
-
+import RouteConfig from './component/RouteConfig'
 
 function App() {
   return (
     <>
-     <RouteConfig/>
+      <RouteConfig />
     </>
-  );
+  )
 }
 
-export default App;
+export default App
