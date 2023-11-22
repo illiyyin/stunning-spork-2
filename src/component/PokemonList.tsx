@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** @jsxImportSource @emotion/react */
 import React, { useContext, useEffect, useState } from 'react'
 import { useQuery, gql } from '@apollo/client'

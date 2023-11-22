@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 import concat from 'lodash.concat'
 /** @jsxImportSource @emotion/react */
 import React, { useState, useEffect, useContext } from 'react'

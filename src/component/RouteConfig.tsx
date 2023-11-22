@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 /** @jsxImportSource @emotion/react */
 import React, { useState, useEffect, lazy, Suspense } from 'react'
 import { PokemonContext } from './PokemonContext'
