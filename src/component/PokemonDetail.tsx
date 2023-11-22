@@ -1,3 +1,5 @@
+// @ts-ignore
+import concat from 'lodash.concat'
 /** @jsxImportSource @emotion/react */
 import React, { useState, useEffect, useContext } from 'react'
 import { useParams } from 'react-router-dom'
@@ -5,7 +7,6 @@ import { css } from '@emotion/react'
 import { Link } from 'react-router-dom'
 
 import { useQuery, gql } from '@apollo/client'
-import concat from 'lodash.concat'
 import { PokemonContext } from './PokemonContext'
 import capitalize from 'lodash.capitalize'
 import slice from 'lodash.slice'

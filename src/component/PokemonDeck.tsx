@@ -1,3 +1,4 @@
+// @ts-ignore
 /** @jsxImportSource @emotion/react */
 import React, { useContext, useEffect, useState } from 'react'
 import { css } from '@emotion/react'
