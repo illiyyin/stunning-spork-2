@@ -12,4 +12,9 @@ export interface Pokemon {
       name: string
     }
   }[]
+  types: {
+    type: {
+      name: string
+    }
+  }[]
 }

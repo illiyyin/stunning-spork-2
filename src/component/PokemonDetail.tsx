@@ -501,7 +501,7 @@ const PokemonDetail = () => {
                   -webkit-text-fill-color: transparent;
                 `}
               >
-                {capitalize(pokemonData.name)}
+                {capitalize(pokemonData?.name)}
               </p>
 
               <div
@@ -510,7 +510,7 @@ const PokemonDetail = () => {
                   margin-top: 4px;
                 `}
               >
-                {pokemonData.types !== null
+                {pokemonData&&pokemonData.types !== null
                   ? pokemonData.types.map((data, index) => (
                       <p
                         key={index}
