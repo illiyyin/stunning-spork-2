@@ -1,10 +1,8 @@
-// @ts-nocheck
 /** @jsxImportSource @emotion/react */
-import React, { useContext, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { css } from '@emotion/react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PokemonContext } from './PokemonContext'
-import capitalize from 'lodash.capitalize'
+import { usePokemonContext } from './PokemonContext'
 import { Link } from 'react-router-dom'
 
 import { ToastContainer, toast } from 'react-toastify'
@@ -13,43 +11,35 @@ import 'react-toastify/dist/ReactToastify.css'
 import Trash from '../image/trash-2.svg'
 import LeftArrow from '../image/chevron-left.svg'
 import Pokeball from '../image/pokeball.png'
+import { capitalize } from '../utils'
+import { Pokemon } from '../utils/type'
 
 const PokemonDeck = () => {
-  const { pokemonOwned, setPokemonOwned } = useContext(PokemonContext)
-
   const [openModal, setOpenModal] = useState(false)
-  const [alertPokemon, setAlertPokemon] = useState()
+  const [selectedPokemon, setSelectedPokemon] = useState<Pokemon | null>(null)
+  const { removePokemon, pokemonsOwned } = usePokemonContext()
 
-  const [myPokemon] = useState(() => {
-    const localPokemon = localStorage.getItem('pokemon')
-    return localPokemon ? JSON.parse(localPokemon) : []
-  })
-
-  useEffect(() => {
-    localStorage.setItem('pokemon', JSON.stringify(myPokemon))
-  }, [myPokemon])
-
-  const handleOpenModal = (e) => {
-    setAlertPokemon(e)
+  const handleOpenModal = (pokemon: Pokemon) => {
     setOpenModal(true)
+    setSelectedPokemon(pokemon)
   }
 
-  const handleCloseModal = (e) => {
+  const handleCloseModal = () => {
     setOpenModal(false)
+    setSelectedPokemon(null)
   }
 
-  const handleRemovePokemon = async (e) => {
-    var tmp = await pokemonOwned.filter((item) => item.myPokemonNickname !== e)
-    await setPokemonOwned(tmp)
-    await setOpenModal(false)
-    await toast.success('Pokemon Removed', {
+  const handleRemovePokemon = async (pokemon: Pokemon) => {
+    removePokemon(pokemon.myPokemonName)
+    setOpenModal(false)
+    setSelectedPokemon(null)
+    toast.success('Pokemon Removed', {
       position: 'bottom-center',
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: false,
       draggable: false,
-      progress: false,
       theme: 'colored',
     })
   }
@@ -79,7 +69,7 @@ const PokemonDeck = () => {
       />
 
       <AnimatePresence>
-        {openModal && (
+        {openModal && selectedPokemon ? (
           <>
             <motion.div
               key="modal"
@@ -121,13 +111,13 @@ const PokemonDeck = () => {
                 <p
                   css={css`
                     width: 240px;
-                    font-family: Poppins;
+
                     color: #54a38f;
                     text-align: center;
                     margin-bottom: 32px;
                   `}
                 >
-                  Are you sure want to remove {alertPokemon.myPokemonNickname} ?
+                  Are you sure want to remove {selectedPokemon.myPokemonName} ?
                 </p>
 
                 <div
@@ -144,7 +134,7 @@ const PokemonDeck = () => {
                       padding: 12px 24px;
                       font-weight: 500;
                       border-radius: 8px;
-                      font-family: Poppins;
+
                       font-size: 18px;
                       color: #54a38f;
                       &:hover {
@@ -163,16 +153,14 @@ const PokemonDeck = () => {
                       padding: 12px 24px;
                       font-weight: 500;
                       border-radius: 8px;
-                      font-family: Poppins;
+
                       font-size: 18px;
                       color: #ffffff;
                       &:hover {
                         background-color: #ff3f3f;
                       }
                     `}
-                    onClick={() =>
-                      handleRemovePokemon(alertPokemon.myPokemonNickname)
-                    }
+                    onClick={() => handleRemovePokemon(selectedPokemon)}
                   >
                     Remove
                   </button>
@@ -180,7 +168,7 @@ const PokemonDeck = () => {
               </motion.div>
             </motion.div>
           </>
-        )}
+        ) : null}
       </AnimatePresence>
 
       <Link
@@ -226,7 +214,6 @@ const PokemonDeck = () => {
               padding: 4px;
               margin: 8px;
               margin-left: 0;
-              font-family: Poppins;
             `}
           >
             Pokemon List
@@ -238,7 +225,7 @@ const PokemonDeck = () => {
         <p
           css={css`
             text-align: center;
-            font-family: Poppins;
+
             font-size: 22px;
             font-weight: 600;
           `}
@@ -255,11 +242,11 @@ const PokemonDeck = () => {
           margin: '48px 0',
         }}
       >
-        {pokemonOwned.length > 0 ? (
-          pokemonOwned.map((data, index) => (
+        {pokemonsOwned.length > 0 ? (
+          pokemonsOwned.map((data) => (
             <>
               <div
-                key={index}
+                key={`${data.name}_${data.myPokemonName}`}
                 css={css`
                   width: '90%';
                 `}
@@ -282,7 +269,7 @@ const PokemonDeck = () => {
                         width: 92px;
                         height: auto;
                       `}
-                      src={data.pokemonImage}
+                      src={data.image}
                       alt={data.myPokemonName}
                     />
                   </div>
@@ -306,7 +293,7 @@ const PokemonDeck = () => {
                                                         color:#828282;
                                                         font-size:14px;
                                                         margin:0;
-                                                        font-family:Poppins;
+                                                        
                                                     }`}
                       >
                         {capitalize(data.myPokemonName)}
@@ -322,14 +309,14 @@ const PokemonDeck = () => {
                                                         align-items: center;
                                                         color:#54A38F;
                                                         font-size:20px;
-                                                        font-family:Poppins;
+                                                        
                                                         font-weight:600;
                                                         @media (min-width: 420px) {
                                                             width: 100%;
                                                         }
                                                     }`}
                       >
-                        {data.myPokemonNickname}
+                        {data.myPokemonName}
                       </p>
                     </div>
 
@@ -358,7 +345,7 @@ const PokemonDeck = () => {
           <p
             css={css`
               text-align: center;
-              font-family: Poppins;
+
               font-size: 22px;
               font-weight: 400;
               background-color: #f4f4f4;

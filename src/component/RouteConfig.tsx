@@ -1,7 +1,6 @@
-// @ts-nocheck
 /** @jsxImportSource @emotion/react */
-import React, { useState, useEffect, lazy, Suspense } from 'react'
-import { PokemonContext } from './PokemonContext'
+import { lazy, Suspense } from 'react'
+import { PokemonProvider } from './PokemonContext'
 import Loading from '../image/cut-loop.webp'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 
@@ -19,62 +18,51 @@ const client = new ApolloClient({
 })
 
 function RouteConfig() {
-  const [pokemon, setPokemon] = useState(null)
-  const [pokemonOwned, setPokemonOwned] = useState(() => {
-    const localPokemon = localStorage.getItem('pokemon')
-    return localPokemon ? JSON.parse(localPokemon) : []
-  })
-
-  useEffect(() => {
-    localStorage.setItem('pokemon', JSON.stringify(pokemonOwned))
-  }, [pokemonOwned])
-
   const router = createBrowserRouter([
     {
-      path: "/",
-      element: <PokemonList />
+      path: '/',
+      element: <PokemonList />,
     },
     {
-      path: "/pokemon/:id",
-      element: <PokemonDetail />
+      path: '/pokemon/:id',
+      element: <PokemonDetail />,
     },
     {
-      path: "/myPokemon",
-      element: <PokemonDeck />
+      path: '/myPokemon',
+      element: <PokemonDeck />,
     },
   ])
 
   return (
     <ApolloProvider client={client}>
-      <PokemonContext.Provider value={{ pokemonOwned, setPokemonOwned }}>
+      <PokemonProvider>
         <Suspense
           fallback={
             <div
               css={css`
-                    background-color: #f8f7fb;
-                    width: 100vw;
-                    height: 100vh;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                  `}
+                background-color: #f8f7fb;
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+              `}
             >
               <img
                 src={Loading}
                 css={css`
-                      margin: auto;
-                      width: 360px;
-                      height: auto;
-                    `}
+                  margin: auto;
+                  width: 360px;
+                  height: auto;
+                `}
                 alt="loading"
               />
             </div>
           }
         >
           <RouterProvider router={router} />
-
         </Suspense>
-      </PokemonContext.Provider>
+      </PokemonProvider>
     </ApolloProvider>
   )
 }

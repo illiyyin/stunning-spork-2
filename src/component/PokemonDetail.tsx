@@ -1,15 +1,10 @@
-// @ts-nocheck
-import concat from 'lodash.concat'
 /** @jsxImportSource @emotion/react */
-import React, { useState, useEffect, useContext } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { css } from '@emotion/react'
 import { Link } from 'react-router-dom'
 
 import { useQuery, gql } from '@apollo/client'
-import { PokemonContext } from './PokemonContext'
-import capitalize from 'lodash.capitalize'
-import slice from 'lodash.slice'
 import BackArrow from '../image/chevron-left.svg'
 import Gotcha from '../image/gotcha.png'
 import Loading from '../image/cut-loop.webp'
@@ -17,29 +12,18 @@ import Egg from '../image/egg.png'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { motion, AnimatePresence } from 'framer-motion'
+import { capitalize } from '../utils'
+import { usePokemonContext } from './PokemonContext'
+import { Pokemon } from '../utils/type'
 
-const PokemonDetail = (value) => {
-  const initialState = {
-    myPokemonNickname: '',
-  }
-
-  const { pokemonOwned, setPokemonOwned } = useContext(PokemonContext)
+const PokemonDetail = () => {
+  const { addPokemon, pokemonsOwned } = usePokemonContext()
   const [openModal, setOpenModal] = useState(false)
-  const [newPokemon, setNewPokemon] = useState(initialState)
-  const [alertName, setAlertName] = useState(false)
+  const [nickname, setNickname] = useState('')
   const [failCatch, setFailCatch] = useState(false)
-  const [hadSameNickname, setHadSameNickname] = useState(true)
   const [limitMoves, setLimitMoves] = useState(12)
-  const [myPokemon, setMyPokemon] = useState(() => {
-    const localPokemon = localStorage.getItem('pokemon')
-    return localPokemon ? JSON.parse(localPokemon) : []
-  })
 
-  const { id:name } = useParams()
-
-  useEffect(() => {
-    localStorage.setItem('pokemon', JSON.stringify(myPokemon))
-  }, [myPokemon])
+  const { id: name } = useParams()
 
   const GET_POKEMON = gql`
     query pokemon($name: String!) {
@@ -63,13 +47,13 @@ const PokemonDetail = (value) => {
     }
   `
 
-  const { loading, error, data } = useQuery(GET_POKEMON, {
+  const { loading, error, data } = useQuery<{ pokemon: Pokemon }>(GET_POKEMON, {
     variables: { name },
   })
 
-  const { myPokemonNickname } = newPokemon
+  const pokemonData = data?.pokemon
 
-  const handleOpenModal =  () => {
+  const handleOpenModal = () => {
     var randomValue = Math.floor(Math.random() * 100)
 
     if (randomValue <= 50) {
@@ -79,47 +63,13 @@ const PokemonDetail = (value) => {
     }
   }
 
-  const handleCloseModal = (e) => {
-    setOpenModal(false)
+  const checkSameName = (name: string) => {
+    return pokemonsOwned.some((item) => item.myPokemonName === name)
   }
 
-  var listPokemonName = []
-
-  pokemonOwned.forEach((x) => {
-    listPokemonName.push(x.myPokemonNickname)
-  })
-
-  const handleNickname = (e) => {
-    setNewPokemon({ ...newPokemon, [e.target.name]: e.target.value })
-  }
-
-  const handleCatchPokemon = () => {
-    setHadSameNickname(false)
-
-    let newPokemons = {
-      ...newPokemon,
-      myPokemonName: pokemonData.name,
-      pokemonImage: pokemonData.sprites.front_default,
-    }
-
-    listPokemonName.forEach((x) => {
-      if (x !== newPokemon.myPokemonNickname) {
-        setAlertName(false)
-      } else {
-        setAlertName(true)
-        setHadSameNickname(true)
-      }
-    })
-
-    if (hadSameNickname === false) {
-      let tmpPok = concat(myPokemon, newPokemons)
-      setMyPokemon(tmpPok)
-      setPokemonOwned(tmpPok)
-      setOpenModal(false)
-      setNewPokemon({ ...newPokemon, myPokemonNickname: '' })
-      setHadSameNickname(false)
-
-      toast.success('Pokemon Added to Collection', {
+  const handleCatchPokemon = (name: string) => {
+    if (!data?.pokemon) {
+      toast.error('Pokemon not found', {
         position: 'bottom-center',
         autoClose: 3000,
         hideProgressBar: false,
@@ -129,43 +79,56 @@ const PokemonDetail = (value) => {
         progress: undefined,
         theme: 'colored',
       })
+      return
     }
+
+    const isSameName = checkSameName(name)
+    if (isSameName) {
+      toast.error(
+        'You have a Pokemon with a same name, try find another name',
+        {
+          position: 'bottom-center',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: false,
+          progress: undefined,
+          theme: 'colored',
+        },
+      )
+      return
+    }
+
+    const newPokemon = {
+      ...data.pokemon,
+      myPokemonName: nickname,
+      image: data?.pokemon.sprites.front_default,
+    }
+
+    addPokemon(newPokemon)
+
+    toast.success('Pokemon Added to Collection', {
+      position: 'bottom-center',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: false,
+      draggable: false,
+      progress: undefined,
+      theme: 'colored',
+    })
+    setOpenModal(false)
   }
 
-  if (loading)
-    return (
-      <div
-        css={css`
-          background-color: #f8f7fb;
-          width: 100vw;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        `}
-      >
-        <img
-          src={Loading}
-          css={css`
-            margin: auto;
-            width: 360px;
-            height: auto;
-          `}
-          alt="loading"
-        />
-      </div>
-    )
-
   if (error) return <p>Error :(</p>
-
-  const pokemonData = data.pokemon
 
   return (
     <div
       css={css`
+        width: auto;
         display: flex;
         flex-direction: column;
-        width: auto;
         min-height: 100vh;
         @media (min-width: 420px) {
           margin: 0 120px;
@@ -186,6 +149,33 @@ const PokemonDetail = (value) => {
         draggable={false}
         pauseOnHover={false}
       />
+      {loading ? (
+        <div
+          css={css`
+            background-color: #f8f7fb;
+            position: fixed;
+
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          `}
+        >
+          <img
+            src={Loading}
+            css={css`
+              margin: auto;
+              width: 360px;
+              height: auto;
+            `}
+            alt="loading"
+            loading="lazy"
+          />
+        </div>
+      ) : null}
 
       <AnimatePresence>
         {failCatch && (
@@ -274,7 +264,7 @@ const PokemonDetail = (value) => {
                     padding: 8px 16px;
                     font-weight: 500;
                     border-radius: 32px;
-                    font-family: Poppins;
+
                     font-size: 16px;
                     color: #54a38f;
                     &:hover {
@@ -371,7 +361,7 @@ const PokemonDetail = (value) => {
                 <p
                   css={css`
                     width: auto;
-                    font-family: Poppins;
+
                     color: #54a38f;
                     text-align: center;
                   `}
@@ -394,24 +384,11 @@ const PokemonDetail = (value) => {
                     }
                   `}
                   type="text"
-                  onInput={handleNickname}
-                  name="myPokemonNickname"
-                  value={myPokemonNickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  value={nickname}
                 />
-
-                {alertName && (
-                  <p
-                    css={css`
-                      color: #fe6060;
-                      text-align: center;
-                      font-family: Poppins;
-                    `}
-                  >
-                    nama pokemon sudah dipakai
-                  </p>
-                )}
                 <button
-                  onClick={handleCatchPokemon}
+                  onClick={() => handleCatchPokemon(nickname)}
                   css={css`
                     margin-top: 32px;
                     background-color: #54a38f;
@@ -419,7 +396,7 @@ const PokemonDetail = (value) => {
                     padding: 8px 16px;
                     font-weight: 500;
                     border-radius: 32px;
-                    font-family: Poppins;
+
                     font-size: 18px;
                     color: white;
                     &:hover {
@@ -430,7 +407,7 @@ const PokemonDetail = (value) => {
                   Give Name
                 </button>
                 <button
-                  onClick={handleCloseModal}
+                  onClick={() => setOpenModal(false)}
                   css={css`
                     margin-top: 4px;
                     background-color: #f4f4f4;
@@ -438,7 +415,7 @@ const PokemonDetail = (value) => {
                     padding: 8px 16px;
                     font-weight: 500;
                     border-radius: 32px;
-                    font-family: Poppins;
+
                     font-size: 16px;
                     color: #54a38f;
                     &:hover {
@@ -484,204 +461,185 @@ const PokemonDetail = (value) => {
             margin: 10px;
             margin-left: 0;
             text-align: center;
-            font-family: Poppins;
           `}
         >
           Detail Pokemon
         </p>
       </div>
 
-      {
-        <>
-          <div
-            css={css`
-              display: flex;
-              margin: 32px;
-              margin-top: 0;
-            `}
-          >
-            <div
-              css={css`
-                display: flex;
-                width: 100%;
-                justify-content: space-between;
-                margin: 0;
-              `}
-            >
-              <div
+      <div
+        css={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div
+          css={css`
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            margin: 0 32px;
+          `}
+        >
+          <div>
+            <div>
+              <p
                 css={css`
-                  display: flex;
-                  flex-direction: column;
-                  height: 100%;
-                  justify-content: space-between;
                   margin: 0;
+                  font-weight: 700;
+                  font-size: 32px;
+
+                  background: linear-gradient(
+                    30deg,
+                    rgba(47, 72, 88, 1) 20%,
+                    rgba(84, 163, 143, 1) 60%,
+                    rgba(218, 247, 220, 1) 100%
+                  );
+                  -webkit-background-clip: text;
+                  -webkit-text-fill-color: transparent;
                 `}
               >
-                <div>
-                  <p
-                    css={css`
-                      margin: 0;
-                      font-weight: 700;
-                      font-size: 32px;
-                      font-family: Poppins;
-                      background: linear-gradient(
-                        30deg,
-                        rgba(47, 72, 88, 1) 20%,
-                        rgba(84, 163, 143, 1) 60%,
-                        rgba(218, 247, 220, 1) 100%
-                      );
-                      -webkit-background-clip: text;
-                      -webkit-text-fill-color: transparent;
-                    `}
-                  >
-                    {capitalize(pokemonData.name)}
-                  </p>
+                {capitalize(pokemonData.name)}
+              </p>
 
-                  <div
-                    css={css`
-                      display: flex;
-                      margin-top: 4px;
-                    `}
-                  >
-                    {pokemonData.types !== null
-                      ? pokemonData.types.map((data, index) => (
-                        <p
-                          key={index}
-                          css={css`
-                              margin: 0;
-                              margin-right: 8px;
-                              background-color: #f4f4f4;
-                              padding: 6px 12px;
-                              border-radius: 24px;
-                              font-size: 12px;
-                              font-family: Poppins;
-                            `}
-                        >
-                          {data.type.name}
-                        </p>
-                      ))
-                      : null}
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleOpenModal}
-                  css={css`
-                    background-color: #54a38f;
-                    border: none;
-                    padding: 8px 16px;
-                    font-weight: 600;
-                    border-radius: 32px;
-                    font-family: Poppins;
-                    font-size: 18px;
-                    margin-top: 48px;
-                    color: #ffffff;
-                    &:hover {
-                      background-color: #458776;
-                    }
-                  `}
-                >
-                  Catch me
-                </button>
-              </div>
               <div
                 css={css`
                   display: flex;
-                  align-items: center;
+                  margin-top: 4px;
                 `}
               >
-                <img
-                  css={css`
-                    width: 144px;
-                    height: auto;
-                    margin: auto;
-                    right: 0;
-                  `}
-                  src={pokemonData.sprites.front_default}
-                  alt={pokemonData.name}
-                />
+                {pokemonData.types !== null
+                  ? pokemonData.types.map((data, index) => (
+                      <p
+                        key={index}
+                        css={css`
+                          margin: 0;
+                          margin-right: 8px;
+                          background-color: #f4f4f4;
+                          padding: 6px 12px;
+                          border-radius: 24px;
+                          font-size: 12px;
+                        `}
+                      >
+                        {data.type.name}
+                      </p>
+                    ))
+                  : null}
               </div>
             </div>
+
+            <button
+              onClick={handleOpenModal}
+              css={css`
+                background-color: #54a38f;
+                border: none;
+                padding: 8px 16px;
+                font-weight: 600;
+                border-radius: 32px;
+
+                font-size: 18px;
+                margin-top: 48px;
+                color: #ffffff;
+                &:hover {
+                  background-color: #458776;
+                }
+              `}
+            >
+              Catch me
+            </button>
           </div>
 
           <div
             css={css`
-              background-color: #f4f4f4;
-              border-radius: 48px 48px 0 0;
-              padding: 18px;
               display: flex;
-              flex-direction: column;
-              height: 100%;
-              margin-top: 36px;
-              margin-bottom: 0;
+              align-items: center;
             `}
           >
-            <p
+            <img
               css={css`
-                color: #54a38f;
-                padding: 0 16px;
-                margin-bottom: 0;
-                font-size: 24px;
-                font-weight: 600;
-                font-family: Poppins;
+                width: 144px;
+                height: auto;
               `}
-            >
-              Move list :
-            </p>
-            <div
-              css={css`
-                padding: 2px 8px;
-              `}
-            >
-              <ul>
-                {pokemonData.moves !== null
-                  ? slice(pokemonData.moves, 0, limitMoves).map(
-                    (data, index) => (
-                      <li
-                        css={css`
-                            list-style-image: url(https://cdn-icons-png.flaticon.com/16/188/188918.png);
-                          `}
-                      >
-                        <p
-                          key={index}
-                          css={css`
-                              margin: 4px;
-                              font-size: 16px;
-                              font-weight: 400;
-                              font-family: Poppins;
-                            `}
-                        >
-                          {data.move.name}
-                        </p>
-                      </li>
-                    ),
-                  )
-                  : null}
-              </ul>
-              {limitMoves !== pokemonData.moves.length ? (
-                <button
-                  css={css`
-                    background-color: #54a38f;
-                    border: none;
-                    padding: 8px 16px;
-                    font-weight: 400;
-                    border-radius: 32px;
-                    font-family: Poppins;
-                    font-size: 14px;
-                    color: #ffffff;
-                    &:hover {
-                      background-color: #458776;
-                    }
-                  `}
-                  onClick={() => setLimitMoves(pokemonData.moves.length)}
-                >
-                  See all moves
-                </button>
-              ) : null}
-            </div>
+              src={pokemonData?.sprites.front_default}
+              alt={pokemonData?.name}
+            />
           </div>
-        </>
-      }
+        </div>
+
+        <div
+          css={css`
+            background-color: #f4f4f4;
+            border-radius: 48px 48px 0 0;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            margin-top: 32px;
+          `}
+        >
+          <p
+            css={css`
+              color: #54a38f;
+              padding: 0 16px;
+              margin-bottom: 0;
+              font-size: 24px;
+              font-weight: 600;
+            `}
+          >
+            Move list :
+          </p>
+          <ul
+            css={css`
+              margin: 2px 8px;
+              overflow: hidden;
+              max-height: 100%;
+              flex-shrink: 1;
+            `}
+          >
+            {pokemonData
+              ? pokemonData.moves.slice(0, limitMoves).map((data, index) => (
+                  <li
+                    css={css`
+                      list-style-image: url(https://cdn-icons-png.flaticon.com/16/188/188918.png);
+                    `}
+                  >
+                    <p
+                      key={index}
+                      css={css`
+                        margin: 4px;
+                        font-size: 16px;
+                        font-weight: 400;
+                      `}
+                    >
+                      {data.move.name}
+                    </p>
+                  </li>
+                ))
+              : null}
+          </ul>
+          {pokemonData && limitMoves < pokemonData?.moves.length ? (
+            <button
+              css={css`
+                background-color: #54a38f;
+                border: none;
+                padding: 8px 16px;
+                font-weight: 400;
+                border-radius: 32px;
+
+                font-size: 14px;
+                color: #ffffff;
+                &:hover {
+                  background-color: #458776;
+                }
+              `}
+              onClick={() => setLimitMoves(pokemonData?.moves.length)}
+            >
+              See all moves
+            </button>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }

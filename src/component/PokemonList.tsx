@@ -1,17 +1,15 @@
-// @ts-nocheck
 /** @jsxImportSource @emotion/react */
-import React, { useContext, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, gql } from '@apollo/client'
 import { css } from '@emotion/react'
-import { PokemonContext } from './PokemonContext'
+import { usePokemonContext } from './PokemonContext'
 import { Link } from 'react-router-dom'
-
-import capitalize from 'lodash.capitalize'
-import slice from 'lodash.slice'
 
 import RightArrow from '../image/chevron-right.svg'
 import Pokedex from '../image/pokedex.png'
 import Loading from '../image/cut-loop.webp'
+import { capitalize } from '../utils'
+import { Pokemon } from '../utils/type'
 
 const GET_ALL_POKEMON = gql`
   query pokemons($limit: Int, $offset: Int) {
@@ -31,74 +29,18 @@ const GET_ALL_POKEMON = gql`
   }
 `
 
-const limitPokemon = {
-  limit: 240,
-  offset: 0,
-}
-
-function PokemonList(props) {
-  const { pokemonOwned } = useContext(PokemonContext)
-  const [tmpPoke, setTmpPoke] = useState([])
-  const [checkOwned, setCheckOwned] = useState(false)
+function PokemonList() {
   const [limitShow, setLimitShow] = useState(12)
-  const { loading, error, data } = useQuery(GET_ALL_POKEMON, {
-    variables: limitPokemon,
+  const { loading, error, data } = useQuery<{
+    pokemons: { results: Pokemon[] }
+  }>(GET_ALL_POKEMON, {
+    variables: { limit: limitShow },
   })
-  const [myPokemon] = useState(() => {
-    const localPokemon = localStorage.getItem('pokemon')
-    return localPokemon ? JSON.parse(localPokemon) : []
-  })
-  useEffect(() => {
-    localStorage.setItem('pokemon', JSON.stringify(myPokemon))
-  }, [myPokemon])
+  const { getPokemonOwned } = usePokemonContext()
 
-  if (loading)
-    return (
-      <div
-        css={css`
-          background-color: #f8f7fb;
-          width: 100vw;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        `}
-      >
-        <img
-          src={Loading}
-          css={css`
-            margin: auto;
-            width: 360px;
-            height: auto;
-          `}
-          alt="loading"
-          loading="lazy"
-        />
-      </div>
-    )
   if (error) return <p>Error :(</p>
 
-  const pokemonData = data.pokemons.results
-
-  var newArray = []
-
-  if (!checkOwned) {
-    pokemonOwned.forEach((x) => {
-      newArray.push(x.myPokemonName)
-    })
-
-    let counts = []
-    for (let i = 0; i < newArray.length; i++) {
-      if (counts[newArray[i]]) {
-        counts[newArray[i]] += 1
-      } else {
-        counts[newArray[i]] = 1
-      }
-    }
-
-    setCheckOwned(true)
-    setTmpPoke(counts)
-  }
+  const pokemonData = data?.pokemons?.results || []
 
   return (
     <div
@@ -131,7 +73,6 @@ function PokemonList(props) {
               padding: 4px;
               margin: 8px;
               margin-right: 0;
-              font-family: Poppins;
             `}
           >
             My Pokemon
@@ -166,8 +107,34 @@ function PokemonList(props) {
           />
         </div>
       </Link>
+      {loading ? (
+        <div
+          css={css`
+            background-color: #f8f7fb;
+            position: fixed;
 
-      <div></div>
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          `}
+        >
+          <img
+            src={Loading}
+            css={css`
+              margin: auto;
+              width: 360px;
+              height: auto;
+            `}
+            alt="loading"
+            loading="lazy"
+          />
+        </div>
+      ) : null}
+
       <div
         css={css`
         display: grid;
@@ -178,10 +145,10 @@ function PokemonList(props) {
         }
       `}
       >
-        {pokemonData ? (
-          slice(pokemonData, 0, limitShow).map((data, index) => (
+        {pokemonData.length > 0 ? (
+          pokemonData.map((data) => (
             <div
-              key={index}
+              key={data.name}
               css={css`
                 text-align: center;
                 background-color: #54a38f;
@@ -194,9 +161,6 @@ function PokemonList(props) {
                   text-decoration: none !important;
                 `}
                 to={'/pokemon/' + data.name}
-                onClick={() => {
-                  props.changeName(data.name)
-                }}
               >
                 <div
                   css={css`
@@ -234,7 +198,7 @@ function PokemonList(props) {
                         color:white;
                         font-size:14px;
                         margin:0;
-                        font-family:Poppins;
+                        
                         }`}
                   >
                     {capitalize(data.name)}
@@ -247,39 +211,30 @@ function PokemonList(props) {
                         font-size:12px;
                         font-weight:400;
                         margin:0;
-                        font-family:Poppins;
+                        
                         }`}
                   >
-                    {tmpPoke[data.name]
-                      ? 'Owned : ' + tmpPoke[data.name]
-                      : 'Owned : 0'}
+                    {`Owned : ${getPokemonOwned(data.name)}`}
                   </p>
                 </div>
               </Link>
             </div>
           ))
         ) : (
-          <div
+          <p
             css={css`
-              background-color: #f8f7fb;
-              width: 100vw;
-              height: 100vh;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
+              text-align: center;
+
+              font-size: 22px;
+              font-weight: 400;
+              background-color: #f4f4f4;
+              padding: 6px 12px;
+              border-radius: 24px;
+              font-size: 12px;
             `}
           >
-            <img
-              src={Loading}
-              css={css`
-                margin: auto;
-                width: 360px;
-                height: auto;
-              `}
-              alt="loading"
-              loading="lazy"
-            />
-          </div>
+            Pokemon not found
+          </p>
         )}
       </div>
 
@@ -299,7 +254,7 @@ function PokemonList(props) {
             padding: 8px 16px;
             font-weight: 400;
             border-radius: 32px;
-            font-family: Poppins;
+
             font-size: 18px;
             color: #54a38f;
             &:hover {
